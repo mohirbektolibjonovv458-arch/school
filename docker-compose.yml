@@ -1,0 +1,63 @@
+# Serverda: docker compose --env-file backend/.env up -d --build
+# Caddy avtomatik bepul HTTPS beradi (kamera faqat https'da ishlaydi).
+services:
+  db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: schoolpro
+      POSTGRES_USER: schoolpro
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?backend/.env da POSTGRES_PASSWORD yozing}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U schoolpro"]
+      interval: 10s
+      retries: 5
+
+  app:
+    build: .
+    restart: always
+    env_file: backend/.env
+    environment:
+      POSTGRES_DB: schoolpro
+      POSTGRES_USER: schoolpro
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      HTTPS: "1"
+      SSL_REDIRECT: "0"   # Caddy o'zi yo'naltiradi
+      TRUSTED_PROXY: "*"
+      ALLOWED_HOSTS: ${DOMAIN}
+      CSRF_TRUSTED_ORIGINS: https://${DOMAIN}
+    depends_on:
+      db: { condition: service_healthy }
+    volumes:
+      - media:/app/media
+
+  caddy:
+    image: caddy:2-alpine
+    restart: always
+    ports: ["80:80", "443:443"]
+    environment:
+      DOMAIN: ${DOMAIN:?backend/.env da DOMAIN yozing (masalan maktab.uz)}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [app]
+
+  # Har kuni bazaning zaxira nusxasi (oxirgi 14 kun) — ./backups papkasida
+  backup:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    volumes: ["./backups:/backups"]
+    entrypoint: ["sh", "-c", "while true; do pg_dump -h db -U schoolpro schoolpro | gzip > /backups/db-$$(date +%Y%m%d-%H%M).sql.gz; find /backups -name 'db-*.sql.gz' -mtime +14 -delete; sleep 86400; done"]
+    depends_on:
+      db: { condition: service_healthy }
+
+volumes:
+  pgdata:
+  media:
+  caddy_data:
+  caddy_config:
