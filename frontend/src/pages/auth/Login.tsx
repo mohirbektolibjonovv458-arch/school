@@ -7,6 +7,7 @@ import type { Me } from "../../lib/types";
 import { Alert, Button, Field, Input, Sheet } from "../../ui";
 import { Logo } from "../../ui/brand";
 import { AuthLayout, GoogleButton, usePublicInfo } from "./shared";
+import PhoneOtp from "./PhoneOtp";
 
 export default function Login() {
   const { user, ready, login, setSession } = useAuth();
@@ -20,6 +21,8 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
   const [forgot, setForgot] = useState(false);
+  const [mode, setMode] = useState<"otp" | "password" | null>(null);
+  const useOtp = (mode ?? (info?.otp ? "otp" : "password")) === "otp" && !!info?.otp;
 
   if (ready && user) return <Navigate to={homeFor(user.role)} replace />;
 
@@ -58,12 +61,29 @@ export default function Login() {
 
   const pending = error?.code === "pending";
 
+  const onOtp = async (d: { access: string; refresh: string; user: Me }) => {
+    tokens.remember(remember);
+    setSession(d);
+    go(d.user);
+  };
+
   return (
     <AuthLayout>
       <div style={{ display: "flex", justifyContent: "center", margin: "18px 0 22px" }}><Logo size={62} /></div>
       <h1 className="auth-title">Maktab tizimiga xush kelibsiz!</h1>
       <p className="auth-sub">O'z hisobingizga kirish uchun ma'lumotlarni kiriting</p>
 
+      {useOtp ? (
+        <div className="col gap-16" style={{ marginTop: 26 }}>
+          <PhoneOtp purpose="login" onVerified={onOtp} />
+          <label className="check" style={{ alignItems: "center", gap: 8, justifyContent: "center" }}>
+            <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} style={{ width: 20, height: 20 }} />
+            <span className="small bold">Meni eslab qolish</span>
+          </label>
+          <button type="button" className="link" style={{ background: "none", border: 0, cursor: "pointer" }} onClick={() => setMode("password")}>Login va parol bilan kirish</button>
+          {info?.google_client_id && (<><div className="auth-or">Yoki</div><GoogleButton clientId={info.google_client_id} onCredential={onGoogle} /></>)}
+        </div>
+      ) : (
       <form className="col gap-16" style={{ marginTop: 26 }} onSubmit={submit}>
         {error && (pending
           ? <Alert tone="info" icon={<Clock3 />}><b>Tasdiq kutilmoqda.</b> {error.message}</Alert>
@@ -97,6 +117,7 @@ export default function Login() {
           </button>
         </div>
         <Button type="submit" size="lg" block loading={busy} icon={<LogIn />} className="auth-btn">Kirish</Button>
+        {info?.otp && <button type="button" className="link" style={{ background: "none", border: 0, cursor: "pointer" }} onClick={() => setMode("otp")}>Telegram kod orqali kirish</button>}
         {info?.google_client_id && (
           <>
             <div className="auth-or">Yoki</div>
@@ -104,6 +125,7 @@ export default function Login() {
           </>
         )}
       </form>
+      )}
 
       <div className="grow" />
       {(info?.allow_registration ?? true) && (
@@ -140,7 +162,7 @@ function ForgotSheet({ open, onClose, initial }: { open: boolean; onClose: () =>
         <Alert tone="success"><b>So'rov yuborildi.</b> {done} Yangi parol bilan kirgach, uni o'zingizga qulay parolga almashtirasiz.</Alert>
       ) : (
         <div className="col gap-12">
-          <p className="muted small">Telefon raqamingiz yoki loginingizni yozing. Maktab ma'muriyati (direktor) xabar oladi va sizga yangi vaqtinchalik parol beradi.</p>
+          <p className="muted small">Telegram botga ulangan bo'lsangiz, parolsiz — <b>Telegram kod orqali</b> kiring. Aks holda telefon raqamingiz yoki loginingizni yozing: maktab ma'muriyati xabar oladi va yangi vaqtinchalik parol beradi.</p>
           {err && <Alert tone="error">{err}</Alert>}
           <Field label="Telefon raqam yoki login">
             <Input value={login} onChange={(e) => setLogin(e.target.value)} placeholder="+998 90 123 45 67" autoFocus />

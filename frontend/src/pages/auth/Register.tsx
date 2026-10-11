@@ -7,6 +7,7 @@ import type { Me } from "../../lib/types";
 import { Alert, Button, Field, Input, Select } from "../../ui";
 import { BooksArt } from "../../ui/brand";
 import { AuthLayout, usePublicInfo } from "./shared";
+import PhoneOtp from "./PhoneOtp";
 
 type Role = "student" | "teacher" | "director";
 
@@ -21,9 +22,12 @@ export default function Register() {
   const info = usePublicInfo();
   const [role, setRole] = useState<Role | null>(null);
   const [done, setDone] = useState<{ role: string; username: string } | null>(null);
+  const [verified, setVerified] = useState<{ phone: string; phone_token: string } | null>(null);
+  const otp = !!info?.otp;
 
-  const back = () => (done ? nav("/login") : role ? setRole(null) : nav("/login"));
-  const step = done ? 3 : role ? 2 : 1;
+  const back = () => (done ? nav("/login") : verified ? setVerified(null) : role ? setRole(null) : nav("/login"));
+  const steps = otp ? 4 : 3;
+  const step = done ? steps : !role ? 1 : otp ? (verified ? 3 : 2) : 2;
 
   return (
     <AuthLayout>
@@ -31,7 +35,7 @@ export default function Register() {
         <button className="icon-btn" onClick={back} aria-label="Orqaga"><ArrowLeft /></button>
         <div className="t">Ro'yxatdan o'tish</div>
       </div>
-      <div className="auth-steps">{[1, 2, 3].map((i) => <i key={i} className={i <= step ? "on" : ""} />)}</div>
+      <div className="auth-steps">{Array.from({ length: steps }, (_, i) => i + 1).map((i) => <i key={i} className={i <= step ? "on" : ""} />)}</div>
 
       {done ? <Done role={done.role} username={done.username} /> : !role ? (
         <>
@@ -50,14 +54,20 @@ export default function Register() {
           <div style={{ display: "flex", justifyContent: "center", marginTop: 26 }}><BooksArt width={230} /></div>
           <p className="auth-foot">Hisobingiz bormi? <Link to="/login">Kirish</Link></p>
         </>
+      ) : otp && !verified ? (
+        <>
+          <h1 className="auth-title" style={{ textAlign: "left" }}>Telefon raqamingiz</h1>
+          <p className="auth-sub" style={{ textAlign: "left" }}>Raqamingizni tasdiqlaymiz — Telegram botga 4 xonali kod keladi. Keyinchalik shu raqam bilan parolsiz kirasiz.</p>
+          <div style={{ marginTop: 22 }}><PhoneOtp purpose="register" onVerified={(d) => setVerified(d)} submitLabel="Kod olish" /></div>
+        </>
       ) : (
-        <RegisterForm role={role} info={info} onPending={setDone} />
+        <RegisterForm role={role} info={info} onPending={setDone} verified={verified} />
       )}
     </AuthLayout>
   );
 }
 
-function RegisterForm({ role, info, onPending }: { role: Role; info: ReturnType<typeof usePublicInfo>; onPending: (d: { role: string; username: string }) => void }) {
+function RegisterForm({ role, info, onPending, verified }: { role: Role; info: ReturnType<typeof usePublicInfo>; onPending: (d: { role: string; username: string }) => void; verified: { phone: string; phone_token: string } | null }) {
   const { setSession } = useAuth();
   const nav = useNavigate();
   const meta = ROLES.find((r) => r.role === role)!;
@@ -69,7 +79,7 @@ function RegisterForm({ role, info, onPending }: { role: Role; info: ReturnType<
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<ApiError | null>(null);
   const set = (k: keyof typeof d, v: string) => setD((x) => ({ ...x, [k]: v }));
-  const mismatch = d.password2.length > 0 && d.password !== d.password2;
+  const mismatch = !verified && d.password2.length > 0 && d.password !== d.password2;
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -78,7 +88,8 @@ function RegisterForm({ role, info, onPending }: { role: Role; info: ReturnType<
     setErr(null);
     try {
       const body = {
-        role, first_name: d.first_name, last_name: d.last_name, middle_name: d.middle_name, phone: d.phone, email: d.email, password: d.password,
+        role, first_name: d.first_name, last_name: d.last_name, middle_name: d.middle_name, email: d.email,
+        ...(verified ? { phone_token: verified.phone_token } : { phone: d.phone, password: d.password }),
         birth_date: d.birth_date || null, school_class: d.school_class ? Number(d.school_class) : null, parent_phone: d.parent_phone,
         subjects, position: d.position, school_name: d.school_name,
       };
@@ -156,9 +167,15 @@ function RegisterForm({ role, info, onPending }: { role: Role; info: ReturnType<
         </>
       )}
 
+      {verified ? (
+        <div className="row gap-8 small" style={{ background: "var(--green-soft)", color: "var(--green)", padding: "10px 14px", borderRadius: 12 }}>
+          <Check size={18} /><span>Telefon tasdiqlandi: <b>{verified.phone}</b></span>
+        </div>
+      ) : (
       <Field label="Telefon raqam" error={err?.field("phone")} help="Tizimga kirish uchun login bo'ladi">
         <Input type="tel" inputMode="tel" value={d.phone} onChange={(e) => set("phone", e.target.value)} placeholder="+998 90 123 45 67" autoComplete="tel" required />
       </Field>
+      )}
       {role === "student" && (
         <Field label="Ota-ona telefoni (ixtiyoriy)" error={err?.field("parent_phone")}>
           <Input type="tel" inputMode="tel" value={d.parent_phone} onChange={(e) => set("parent_phone", e.target.value)} placeholder="+998 90 123 45 67" />
@@ -167,6 +184,7 @@ function RegisterForm({ role, info, onPending }: { role: Role; info: ReturnType<
       <Field label="Email (ixtiyoriy)" error={err?.field("email")} help="Email bilan ham kira olasiz">
         <Input type="email" value={d.email} onChange={(e) => set("email", e.target.value)} placeholder="ism@misol.uz" autoComplete="email" />
       </Field>
+      {!verified && (<>
       <Field label="Parol" error={err?.field("password")} help="Kamida 8 belgi: harf va raqam aralash">
         <div className="auth-input">
           <Input type={show ? "text" : "password"} value={d.password} onChange={(e) => set("password", e.target.value)} autoComplete="new-password" required minLength={8} style={{ paddingLeft: 14, paddingRight: 52 }} />
@@ -176,6 +194,7 @@ function RegisterForm({ role, info, onPending }: { role: Role; info: ReturnType<
       <Field label="Parolni takrorlang" error={mismatch ? "Parollar mos emas" : undefined}>
         <Input type={show ? "text" : "password"} value={d.password2} onChange={(e) => set("password2", e.target.value)} autoComplete="new-password" required invalid={mismatch} />
       </Field>
+      </>)}
       <label className="check">
         <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
         <span className="small muted">Shaxsiy ma'lumotlarim maktab tizimida saqlanishi va ishlatilishiga roziman</span>

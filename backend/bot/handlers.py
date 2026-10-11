@@ -226,6 +226,34 @@ def handle_update(upd):
         log.exception("Bot update xatosi")
 
 
+WELCOME = ("👋 <b>SchoolPro</b> botiga xush kelibsiz!\n\n"
+           "Ilovaga kirish va ro'yxatdan o'tish kodlari shu yerga keladi. Buning uchun pastdagi "
+           "<b>«📱 Raqamni ulashish»</b> tugmasini bosing.")
+
+
+def link_phone(msg, chat_id):
+    """Kontakt ulashildi: raqam shu Telegram akkauntniki (Telegram kafolatlaydi) — kodlar shu chatga keladi."""
+    from accounts.models import TelegramLink
+
+    c = msg["contact"]
+    if c.get("user_id") != msg.get("from", {}).get("id"):
+        return send(chat_id, "❌ Faqat o'zingizning raqamingizni ulashing (pastdagi tugma orqali).", CONTACT_KB)
+    digits = re.sub(r"\D", "", c.get("phone_number") or "")
+    if not (len(digits) == 12 and digits.startswith("998")):
+        return send(chat_id, "Faqat O'zbekiston (+998) raqamlari qabul qilinadi.", {"remove_keyboard": True})
+    phone = "+" + digits
+    TelegramLink.objects.filter(chat_id=chat_id).exclude(phone=phone).delete()
+    TelegramLink.objects.update_or_create(phone=phone, defaults={"chat_id": chat_id, "tg_username": msg.get("from", {}).get("username") or ""})
+    users = [u for u in User.objects.filter(is_active=True).exclude(phone="") if _norm_phone(u.phone) == digits[-9:]]
+    mgr = next((u for u in users if u.role in MANAGER_ROLES), None)
+    if mgr:
+        return link_user(mgr, chat_id, "contact")
+    if len(users) == 1 and not User.objects.filter(telegram_chat_id=chat_id).exclude(pk=users[0].pk).exists():
+        User.objects.filter(pk=users[0].pk).update(telegram_chat_id=chat_id)
+    return send(chat_id, f"✅ Raqamingiz ulandi: <b>{phone}</b>\n\nEndi ilovaga qayting — kod avtomatik shu yerga keladi. "
+                         "Kelmasa, ilovada «Kod olish» tugmasini qayta bosing.", {"remove_keyboard": True})
+
+
 def handle_message(msg):
     chat_id = msg["chat"]["id"]
     text = (msg.get("text") or "").strip()
@@ -233,6 +261,8 @@ def handle_message(msg):
 
     if text.startswith("/start"):
         code = text[6:].strip()
+        if code.startswith("ph-"):  # ilovadan kod olish uchun kelgan
+            return send(chat_id, WELCOME, CONTACT_KB)
         if code:
             lc = LinkCode.objects.filter(code=code, expires_at__gt=timezone.now()).select_related("user").first()
             if lc and lc.user.is_active and lc.user.role in MANAGER_ROLES:
@@ -241,22 +271,16 @@ def handle_message(msg):
             return send(chat_id, "❌ Havola noto'g'ri yoki muddati o'tgan. Paneldan yangi havola oling.")
         if user:
             return send(chat_id, f"Assalomu alaykum, {esc(user.first_name or user.full_name)}! Kerakli bo'limni tanlang 👇", MENU)
-        return send(chat_id, "👋 Bu — maktab rahbariyati uchun yopiq bot.\n\nUlanish uchun panel → <b>Sozlamalar → Telegram</b> bo'limidagi "
-                             "havolani bosing yoki tizimdagi raqamingizni ulashing.", CONTACT_KB)
+        return send(chat_id, WELCOME, CONTACT_KB)
 
     if "contact" in msg:
-        c = msg["contact"]
-        if c.get("user_id") != msg.get("from", {}).get("id"):
-            return send(chat_id, "Faqat o'zingizning raqamingizni ulashing.")
-        tail = _norm_phone(c.get("phone_number"))
-        cand = [u for u in User.objects.filter(is_active=True, role__in=MANAGER_ROLES).exclude(phone="") if _norm_phone(u.phone) == tail]
-        if len(cand) == 1:
-            return link_user(cand[0], chat_id, "contact")
-        return send(chat_id, "❌ Bu raqam bilan direktor yoki administrator topilmadi.\nPanelda profilingizga telefon raqamini kiriting yoki ulash havolasidan foydalaning.",
-                    {"remove_keyboard": True})
+        return link_phone(msg, chat_id)
 
     if not user:
-        return send(chat_id, "🔒 Ruxsat yo'q. Bot faqat maktab direktori va administratorlari uchun.", CONTACT_KB)
+        from accounts.models import TelegramLink
+        if TelegramLink.objects.filter(chat_id=chat_id).exists():
+            return send(chat_id, "✅ Raqamingiz ulangan. Kirish kodlari shu yerga keladi — ilovada «Kod olish» tugmasini bosing.")
+        return send(chat_id, WELCOME, CONTACT_KB)
 
     st = get_state(chat_id)
     if st and st.state == "ann_text" and text and not text.startswith("/") and text not in sum(MENU["keyboard"], []):

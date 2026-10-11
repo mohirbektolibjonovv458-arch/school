@@ -5,7 +5,7 @@ export interface Me {
   role: Role; phone: string; avatar_url: string | null; email: string; birth_date: string | null; gender: string;
   must_change_password: boolean; theme: string; telegram_alerts: boolean; teacher_id: number | null;
   student: { id: number; class_id: number | null; class_name: string | null; student_no: string } | null;
-  telegram_linked: boolean; last_login: string | null;
+  telegram_linked: boolean; has_password: boolean; last_login: string | null;
 }
 
 export interface Paged<T> { count: number; next: string | null; previous: string | null; results: T[] }

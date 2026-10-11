@@ -37,11 +37,12 @@ class MeSerializer(UserBriefSerializer):
     teacher_id = serializers.SerializerMethodField()
     student = serializers.SerializerMethodField()
     telegram_linked = serializers.SerializerMethodField()
+    has_password = serializers.SerializerMethodField()
 
     class Meta(UserBriefSerializer.Meta):
         fields = UserBriefSerializer.Meta.fields + [
             "email", "birth_date", "gender", "must_change_password", "theme", "telegram_alerts",
-            "teacher_id", "student", "telegram_linked", "date_joined", "last_login",
+            "teacher_id", "student", "telegram_linked", "has_password", "date_joined", "last_login",
         ]
         read_only_fields = ["username", "role", "must_change_password", "date_joined", "last_login"]
 
@@ -61,6 +62,9 @@ class MeSerializer(UserBriefSerializer):
     def get_telegram_linked(self, obj):
         return bool(obj.telegram_chat_id)
 
+    def get_has_password(self, obj):
+        return obj.has_usable_password()
+
 
 class ProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -77,14 +81,15 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
 
 
 class ChangePasswordSerializer(serializers.Serializer):
-    old_password = serializers.CharField()
+    old_password = serializers.CharField(required=False, allow_blank=True)
     new_password = serializers.CharField(min_length=8, max_length=128)
 
     def validate(self, data):
         user = self.context["request"].user
-        if not user.check_password(data["old_password"]):
+        old = data.get("old_password") or ""
+        if user.has_usable_password() and not user.check_password(old):
             raise serializers.ValidationError({"old_password": "Joriy parol noto'g'ri"})
-        if data["old_password"] == data["new_password"]:
+        if old and old == data["new_password"]:
             raise serializers.ValidationError({"new_password": "Yangi parol eskisidan farq qilishi kerak"})
         try:
             password_validation.validate_password(data["new_password"], user)

@@ -28,8 +28,10 @@ class BotTests(TestCase):
         handlers.handle_update({"update_id": 1, "message": m})
         return self.sent[-1][1]
 
-    def test_stranger_is_rejected(self):
-        self.assertIn("Ruxsat yo'q", self.msg("📊 Bugungi davomat")["text"])
+    def test_stranger_gets_code_bot_welcome(self):
+        r = self.msg("📊 Bugungi davomat")
+        self.assertIn("Raqamni ulashish", r["text"])
+        self.assertNotIn("Davomat —", r["text"])
 
     def test_link_via_code_and_menu(self):
         with mock.patch("bot.views.bot_username", return_value="school_bot"):

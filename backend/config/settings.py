@@ -175,7 +175,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "core.pagination.Pagination",
     "PAGE_SIZE": 30,
     "EXCEPTION_HANDLER": "core.exceptions.exception_handler",
-    "DEFAULT_THROTTLE_RATES": {"login": "10/min", "kiosk": "120/min", "pin": "20/min", "register": "6/hour", "forgot": "5/hour"},
+    "DEFAULT_THROTTLE_RATES": {"login": "10/min", "kiosk": "120/min", "pin": "20/min", "register": "6/hour", "forgot": "5/hour", "otp": "40/hour"},
 }
 
 SIMPLE_JWT = {
@@ -199,6 +199,8 @@ SECURE_REFERRER_POLICY = "same-origin"
 X_FRAME_OPTIONS = "DENY"
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
+# ixtiyoriy: bot nomi (@siz), Telegram vaqtincha javob bermasa havola uchun
+TELEGRAM_BOT_USERNAME = os.getenv("TELEGRAM_BOT_USERNAME", "").strip().lstrip("@")
 BIOMETRIC_KEY = os.getenv("BIOMETRIC_KEY", "").strip()
 # Google orqali kirish: Google Cloud Console → OAuth Client ID (Web)
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "").strip()

@@ -4,7 +4,7 @@ import { Logo, NightSchool } from "../../ui/brand";
 
 export interface PublicInfo {
   school: string; logo_url: string | null; splash_url: string | null; has_director: boolean; allow_registration: boolean;
-  classes: { id: number; name: string }[]; subjects: { id: number; name: string }[]; google_client_id: string | null;
+  classes: { id: number; name: string }[]; subjects: { id: number; name: string }[]; google_client_id: string | null; otp: boolean;
 }
 
 let cache: Promise<PublicInfo> | null = null;

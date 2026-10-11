@@ -41,8 +41,9 @@ Ilova avvalo **telefon** uchun qurilgan: pastki menyu, katta tugmalar va pastdan
 
 ### Kirish va ro'yxatdan o'tish
 - **Ochilish ekrani** — kechki maktab manzarasi (direktor Sozlamalarda o'z maktabi suratini qo'yishi mumkin).
-- **Kirish** — telefon raqam (istalgan ko'rinishda) yoki email bilan; «Meni eslab qolish»; «Parolni unutdingizmi?» so'rovi direktorga (ilova va Telegram) boradi.
-- **Ro'yxatdan o'tish** — o'quvchi, o'qituvchi yoki direktor rolini tanlab. O'quvchi va o'qituvchi so'rovini direktor **«So'rovlar»** bo'limida tasdiqlaydi (tasdiqlanmaguncha kira olmaydi). Maktabda hali direktor bo'lmasa, birinchi ro'yxatdan o'tgan direktor darhol kiradi; keyingilar administrator sifatida tasdiqqa tushadi. Sozlamalarda ro'yxatdan o'tishni butunlay yopish mumkin.
+- **Telegram kod orqali kirish (asosiy usul)** — telefon raqam yoziladi → 4 xonali kod Telegram botga keladi → kod kiritiladi. Birinchi marta ilova botni ochishni so'raydi: botda «📱 Raqamni ulashish» bosiladi (Telegram raqam egaligini kafolatlaydi), ilova buni o'zi sezib kodni yuboradi. Kod 3 daqiqa amal qiladi, 5 ta urinish, soatiga 6 ta kod; kodlar bazada faqat hash ko'rinishida.
+- **Login va parol bilan kirish** — qo'shimcha usul (telefon, login yoki email); «Meni eslab qolish»; «Parolni unutdingizmi?» so'rovi direktorga boradi.
+- **Ro'yxatdan o'tish** — rol tanlanadi → telefon raqam Telegram kodi bilan tasdiqlanadi (parol shart emas) → ma'lumotlar. O'quvchi va o'qituvchi so'rovini direktor **«So'rovlar»** bo'limida tasdiqlaydi (tasdiqlanmaguncha kira olmaydi). Maktabda hali direktor bo'lmasa, birinchi ro'yxatdan o'tgan direktor darhol kiradi; keyingilar administrator sifatida tasdiqqa tushadi. Sozlamalarda ro'yxatdan o'tishni butunlay yopish mumkin.
 - **Google orqali kirish** — Variables'ga `GOOGLE_CLIENT_ID` qo'shilsa tugma paydo bo'ladi (Google Cloud Console → Credentials → OAuth client ID → Web application; «Authorized JavaScript origins» ga sayt manzilini yozing). Foydalanuvchi profilidagi email Google emailiga mos bo'lishi kerak.
 
 ### Qo'shimcha imkoniyatlar
@@ -122,7 +123,8 @@ cd frontend && npm run dev     # http://localhost:5173 (API 8000 ga proksi qilin
    | `DIRECTOR_USERNAME` | direktor logini |
    | `DIRECTOR_PASSWORD` | direktor paroli (8+ belgi) |
    | `DIRECTOR_NAME` | masalan `Xasanov Anvar` |
-   | `TELEGRAM_BOT_TOKEN` | ixtiyoriy, @BotFather'dan |
+   | `TELEGRAM_BOT_TOKEN` | @BotFather'dan — kirish kodlari va direktor boti (shu bitta bot) |
+   | `TELEGRAM_BOT_USERNAME` | ixtiyoriy, bot nomi (masalan `schoolpro_bot`) |
    | `GOOGLE_CLIENT_ID` | ixtiyoriy, Google orqali kirish uchun |
 
 5. **Settings → Networking → Generate Domain** — sizga `https://...up.railway.app` manzili beriladi (HTTPS bilan, kamera ishlaydi).

@@ -52,6 +52,7 @@ def public_info(request):
         "classes": [{"id": c.id, "name": c.name} for c in SchoolClass.objects.filter(is_active=True)],
         "subjects": [{"id": x.id, "name": x.name} for x in Subject.objects.all()],
         "google_client_id": settings.GOOGLE_CLIENT_ID or None,
+        "otp": bool(settings.TELEGRAM_BOT_TOKEN),
     })
 
 
@@ -60,9 +61,10 @@ class RegisterSerializer(serializers.Serializer):
     first_name = serializers.CharField(max_length=64)
     last_name = serializers.CharField(max_length=64)
     middle_name = serializers.CharField(max_length=64, required=False, allow_blank=True)
-    phone = serializers.CharField(max_length=20)
+    phone = serializers.CharField(max_length=20, required=False, allow_blank=True)
+    phone_token = serializers.CharField(required=False, allow_blank=True)
     email = serializers.EmailField(required=False, allow_blank=True)
-    password = serializers.CharField(min_length=8, max_length=128)
+    password = serializers.CharField(min_length=8, max_length=128, required=False, allow_blank=True)
     birth_date = serializers.DateField(required=False, allow_null=True)
     school_class = serializers.IntegerField(required=False, allow_null=True)
     parent_phone = serializers.CharField(max_length=20, required=False, allow_blank=True)
@@ -82,14 +84,10 @@ class RegisterSerializer(serializers.Serializer):
             raise serializers.ValidationError("Familiyani to'liq kiriting")
         return v
 
-    def validate_phone(self, v):
-        v = clean_phone(v)
-        if not v:
-            raise serializers.ValidationError("Telefon raqamini kiriting")
+    def _check_phone_free(self, v):
         d = phone_digits(v)
         if User.objects.filter(Q(username__in=[d, "+" + d]) | Q(phone__in=["+" + d, d])).exclude(approval=Approval.REJECTED).exists():
-            raise serializers.ValidationError("Bu telefon raqami bilan hisob allaqachon bor. «Kirish» orqali kiring yoki parolni tiklang.")
-        return v
+            raise serializers.ValidationError({"phone": "Bu telefon raqami bilan hisob allaqachon bor. «Kirish» orqali kiring."})
 
     def validate_email(self, v):
         v = (v or "").strip().lower()
@@ -103,10 +101,24 @@ class RegisterSerializer(serializers.Serializer):
     def validate(self, data):
         from school.models import SchoolClass
 
-        try:
-            password_validation.validate_password(data["password"], User(first_name=data["first_name"], last_name=data["last_name"]))
-        except Exception as exc:  # noqa: BLE001
-            raise serializers.ValidationError({"password": [translate_pw(m) for m in getattr(exc, "messages", [str(exc)])]})
+        from .otp import otp_enabled, verified_phone
+
+        if data.get("phone_token"):
+            data["phone"] = verified_phone(data["phone_token"])  # Telegram kodi bilan tasdiqlangan
+        elif otp_enabled():
+            raise serializers.ValidationError({"phone": "Avval telefon raqamingizni Telegram kodi bilan tasdiqlang"})
+        else:
+            data["phone"] = clean_phone(data.get("phone", ""))
+            if not data["phone"]:
+                raise serializers.ValidationError({"phone": "Telefon raqamini kiriting"})
+            if not data.get("password"):
+                raise serializers.ValidationError({"password": "Parol kiriting"})
+        self._check_phone_free(data["phone"])
+        if data.get("password"):
+            try:
+                password_validation.validate_password(data["password"], User(first_name=data["first_name"], last_name=data["last_name"]))
+            except Exception as exc:  # noqa: BLE001
+                raise serializers.ValidationError({"password": [translate_pw(m) for m in getattr(exc, "messages", [str(exc)])]})
         if data["role"] == "student":
             cid = data.get("school_class")
             if not cid or not SchoolClass.objects.filter(pk=cid, is_active=True).exists():
@@ -157,7 +169,10 @@ def register(request):
         user.approval, user.is_active = Approval.APPROVED, True
     else:
         user.approval, user.is_active = Approval.PENDING, False
-    user.set_password(d["password"])
+    if d.get("password"):
+        user.set_password(d["password"])
+    else:
+        user.set_unusable_password()  # faqat Telegram kodi orqali kiradi
     user.save()
 
     if role == "student":

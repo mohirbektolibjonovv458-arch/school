@@ -15,14 +15,19 @@ _bot_cache = {}
 
 
 def bot_username():
+    import time
+
     if not settings.TELEGRAM_BOT_TOKEN:
         return None
     if "username" not in _bot_cache:
+        if _bot_cache.get("fail_until", 0) > time.time():
+            return settings.TELEGRAM_BOT_USERNAME or None
         res = tg_call("getMe", _timeout=8)
         if res and res.get("ok"):
             _bot_cache["username"] = res["result"]["username"]
         else:
-            return None
+            _bot_cache["fail_until"] = time.time() + 60  # Telegram javob bermasa — har so'rovda kutmaslik uchun
+            return settings.TELEGRAM_BOT_USERNAME or None
     return _bot_cache["username"]
 
 

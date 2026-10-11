@@ -86,13 +86,13 @@ export default function Profile() {
               <div className="bold">Parol</div>
               <div className="small subtle">Oxirgi kirish: {fmtDateTime(user.last_login)}</div>
             </div>
-            <Button variant="secondary" icon={<KeyRound />} onClick={() => setPwOpen(true)}>Parolni o'zgartirish</Button>
+            <Button variant="secondary" icon={<KeyRound />} onClick={() => setPwOpen(true)}>{user.has_password === false ? "Parol o'rnatish" : "Parolni o'zgartirish"}</Button>
           </div>
         </Card>
 
         <Button variant="danger-soft" block icon={<LogOut />} onClick={logout}>Hisobdan chiqish</Button>
       </div>
-      <Sheet open={pwOpen} onClose={() => setPwOpen(false)} title="Parolni o'zgartirish">
+      <Sheet open={pwOpen} onClose={() => setPwOpen(false)} title={user.has_password === false ? "Parol o'rnatish" : "Parolni o'zgartirish"}>
         <PasswordForm onDone={() => setPwOpen(false)} />
       </Sheet>
     </Page>

@@ -9,7 +9,8 @@ import { Logo } from "../ui/brand";
 import { AuthLayout } from "./auth/shared";
 
 export function PasswordForm({ onDone }: { onDone?: () => void }) {
-  const { setSession } = useAuth();
+  const { setSession, user } = useAuth();
+  const noPassword = user && user.has_password === false;
   const toast = useToast();
   const [oldPw, setOld] = useState("");
   const [pw, setPw] = useState("");
@@ -39,9 +40,13 @@ export function PasswordForm({ onDone }: { onDone?: () => void }) {
   return (
     <form className="col gap-16" onSubmit={submit}>
       {err && !err.errors && <Alert tone="error">{err.message}</Alert>}
-      <Field label="Joriy (vaqtinchalik) parol" error={err?.field("old_password")}>
-        <Input type="password" value={oldPw} onChange={(e) => setOld(e.target.value)} autoComplete="current-password" required />
-      </Field>
+      {noPassword ? (
+        <p className="small muted">Siz Telegram kodi orqali kirasiz. Xohlasangiz, login va parol bilan kirish uchun parol o'rnating.</p>
+      ) : (
+        <Field label="Joriy (vaqtinchalik) parol" error={err?.field("old_password")}>
+          <Input type="password" value={oldPw} onChange={(e) => setOld(e.target.value)} autoComplete="current-password" required />
+        </Field>
+      )}
       <Field label="Yangi parol" error={err?.field("new_password")} help="Kamida 8 belgi, harf va raqam aralash">
         <Input type="password" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" required minLength={8} />
       </Field>

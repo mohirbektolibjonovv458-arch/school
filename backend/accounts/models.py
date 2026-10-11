@@ -64,3 +64,32 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.full_name
+
+
+class TelegramLink(models.Model):
+    """Botda «Raqamni ulashish» qilingan raqamlar: telefon → chat. Telegram raqam egaligini kafolatlaydi."""
+
+    phone = models.CharField(max_length=20, unique=True)
+    chat_id = models.BigIntegerField(db_index=True)
+    tg_username = models.CharField(max_length=64, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+class PhoneLinkToken(models.Model):
+    """Ilovadan botga o'tish havolasi (t.me/bot?start=ph-...) — ulanish holatini raqamni oshkor qilmasdan kuzatish uchun."""
+
+    token = models.CharField(max_length=40, unique=True)
+    phone = models.CharField(max_length=20)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class PhoneCode(models.Model):
+    """Telegram orqali yuborilgan bir martalik kod (hash ko'rinishida saqlanadi)."""
+
+    PURPOSES = [("login", "Kirish"), ("register", "Ro'yxatdan o'tish")]
+    phone = models.CharField(max_length=20, db_index=True)
+    purpose = models.CharField(max_length=10, choices=PURPOSES)
+    code_hash = models.CharField(max_length=64)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    used = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)

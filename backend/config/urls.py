@@ -4,7 +4,7 @@ from django.urls import include, path, re_path
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 
-from accounts import signup, views as acc
+from accounts import otp, signup, views as acc
 from accounts.authentication import RefreshSerializer
 from attendance import views as att
 from bot import views as botv
@@ -36,6 +36,9 @@ api = [
     path("health/", core.health),
     path("auth/login/", acc.login),
     path("auth/register/", signup.register),
+    path("auth/otp/send/", otp.send_code),
+    path("auth/otp/verify/", otp.verify_code),
+    path("auth/otp/link/<str:token>/", otp.link_status),
     path("auth/forgot/", signup.forgot_password),
     path("auth/google/", signup.google_login),
     path("public/", signup.public_info),
