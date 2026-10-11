@@ -39,6 +39,12 @@ Ilova avvalo **telefon** uchun qurilgan: pastki menyu, katta tugmalar va pastdan
 - **Kiosk qurilmalar:** darvozadagi planshetni kod bilan juftlash, o'chirish va onlayn holati.
 - **Telegram bot**, **sozlamalar** (ish vaqti, qo'ng'iroq jadvali, davomat qoidalari, yuz tanish aniqligi) va **amallar tarixi** (audit).
 
+### Kirish va ro'yxatdan o'tish
+- **Ochilish ekrani** — kechki maktab manzarasi (direktor Sozlamalarda o'z maktabi suratini qo'yishi mumkin).
+- **Kirish** — telefon raqam (istalgan ko'rinishda) yoki email bilan; «Meni eslab qolish»; «Parolni unutdingizmi?» so'rovi direktorga (ilova va Telegram) boradi.
+- **Ro'yxatdan o'tish** — o'quvchi, o'qituvchi yoki direktor rolini tanlab. O'quvchi va o'qituvchi so'rovini direktor **«So'rovlar»** bo'limida tasdiqlaydi (tasdiqlanmaguncha kira olmaydi). Maktabda hali direktor bo'lmasa, birinchi ro'yxatdan o'tgan direktor darhol kiradi; keyingilar administrator sifatida tasdiqqa tushadi. Sozlamalarda ro'yxatdan o'tishni butunlay yopish mumkin.
+- **Google orqali kirish** — Variables'ga `GOOGLE_CLIENT_ID` qo'shilsa tugma paydo bo'ladi (Google Cloud Console → Credentials → OAuth client ID → Web application; «Authorized JavaScript origins» ga sayt manzilini yozing). Foydalanuvchi profilidagi email Google emailiga mos bo'lishi kerak.
+
 ### Qo'shimcha imkoniyatlar
 - **Kelish vaqti dars jadvaliga qarab hisoblanadi.** 3-darsdan boshlaydigan o'qituvchi soat 08:00 da «kechikkan» bo'lib qolmaydi. Darsi yo'q kun dam olish hisoblanadi.
 - **Erta ketish ogohlantirishi:** o'qituvchi oxirgi darsi tugamasdan chiqsa, direktorga xabar boradi.
@@ -117,6 +123,7 @@ cd frontend && npm run dev     # http://localhost:5173 (API 8000 ga proksi qilin
    | `DIRECTOR_PASSWORD` | direktor paroli (8+ belgi) |
    | `DIRECTOR_NAME` | masalan `Xasanov Anvar` |
    | `TELEGRAM_BOT_TOKEN` | ixtiyoriy, @BotFather'dan |
+   | `GOOGLE_CLIENT_ID` | ixtiyoriy, Google orqali kirish uchun |
 
 5. **Settings → Networking → Generate Domain** — sizga `https://...up.railway.app` manzili beriladi (HTTPS bilan, kamera ishlaydi).
 6. Yuklangan fayllar (vazifa rasmlari, PDF) deploydan keyin yo'qolmasligi uchun: servisda **+ Volume** qo'shing, mount path: `/app/media`, hamda Variables'ga `RAILWAY_RUN_UID=0` yozing (volume'ga yozish ruxsati uchun).
@@ -199,7 +206,7 @@ schoolpro/
 
 ### Testlar
 ```bash
-cd backend && source venv/bin/activate && python manage.py test     # 40 ta test
+cd backend && source venv/bin/activate && python manage.py test     # 51 ta test
 cd frontend && npx tsc -b                                           # tiplar
 ```
 Testlar quyidagilarni qamrab oladi: ruxsatlar, vazifa oqimi, fayl tekshiruvi, davomat mantig'i (kechikish, imtiyoz, jadvalga qarab kutilgan vaqt), biometrik shifrlash va solishtirish, kiosk juftlash, PIN bloklash, Telegram bot (ulash, menyu, e'lon), avtomatik ogohlantirishlar.

@@ -5,6 +5,8 @@ import { api, ApiError } from "../lib/api";
 import { homeFor, useAuth } from "../lib/auth";
 import { Alert, Button, Field, Input } from "../ui";
 import { useToast } from "../ui/toast";
+import { Logo } from "../ui/brand";
+import { AuthLayout } from "./auth/shared";
 
 export function PasswordForm({ onDone }: { onDone?: () => void }) {
   const { setSession } = useAuth();
@@ -62,20 +64,17 @@ export default function ChangePassword({ forced }: { forced?: boolean }) {
   const { user, logout } = useAuth();
   const nav = useNavigate();
   return (
-    <div className="auth-page">
-      <div className="auth-card">
-        <div className="card" style={{ padding: 22 }}>
-          <div className="row gap-12" style={{ marginBottom: 18 }}>
-            <div className="stat-icon tone-primary" style={{ width: 48, height: 48, borderRadius: 14 }}><ShieldCheck /></div>
-            <div>
-              <h2 className="h2">Yangi parol o'rnating</h2>
-              <p className="muted small">{forced ? `${user?.first_name || ""}, xavfsizlik uchun vaqtinchalik parolni almashtiring` : "Hisobingizni himoyalang"}</p>
-            </div>
-          </div>
-          <PasswordForm onDone={() => nav(homeFor(user?.role), { replace: true })} />
-          {forced && <Button variant="ghost" block className="mt-8" onClick={logout}>Chiqish</Button>}
+    <AuthLayout>
+      <div style={{ display: "flex", justifyContent: "center", margin: "18px 0 20px" }}><Logo size={54} /></div>
+      <div className="row gap-12" style={{ marginBottom: 18 }}>
+        <div className="stat-icon tone-primary" style={{ width: 48, height: 48, borderRadius: 14 }}><ShieldCheck /></div>
+        <div>
+          <h2 className="h2">Yangi parol o'rnating</h2>
+          <p className="muted small">{forced ? `${user?.first_name || ""}, xavfsizlik uchun vaqtinchalik parolni almashtiring` : "Hisobingizni himoyalang"}</p>
         </div>
       </div>
-    </div>
+      <PasswordForm onDone={() => nav(homeFor(user?.role), { replace: true })} />
+      {forced && <Button variant="ghost" block className="mt-8" onClick={logout}>Chiqish</Button>}
+    </AuthLayout>
   );
 }

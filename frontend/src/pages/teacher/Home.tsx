@@ -37,7 +37,7 @@ export default function TeacherHome() {
                   {d.attendance.check_out && <span className="badge" style={{ background: "rgba(255,255,255,.18)", color: "#fff" }}>Ketgan: {d.attendance.check_out}</span>}
                 </div>
                 <div className="row gap-8 mt-16" style={{ position: "relative", zIndex: 1 }}>
-                  <Button size="sm" style={{ background: "#fff", color: "#4338ca" }} icon={<Plus />} onClick={() => nav("/t/homework/new")}>Vazifa berish</Button>
+                  <Button size="sm" style={{ background: "#fff", color: "#1747b8" }} icon={<Plus />} onClick={() => nav("/t/homework/new")}>Vazifa berish</Button>
                   <Button size="sm" style={{ background: "rgba(255,255,255,.18)", color: "#fff" }} icon={<ScanFace />} onClick={() => nav("/t/face")}>Yuz orqali kirish</Button>
                 </div>
               </div>

@@ -99,7 +99,7 @@ export function SectionTitle({ title, action }: { title: ReactNode; action?: Rea
   return <div className="section-title"><h2>{title}</h2>{action}</div>;
 }
 
-const AVATAR_COLORS = ["#6366F1", "#8B5CF6", "#EC4899", "#F43F5E", "#F97316", "#EAB308", "#22C55E", "#14B8A6", "#06B6D4", "#3B82F6"];
+const AVATAR_COLORS = ["#1D5FE0", "#0EA5E9", "#EC4899", "#F43F5E", "#F97316", "#EAB308", "#22C55E", "#14B8A6", "#06B6D4", "#3B82F6"];
 export function Avatar({ name, url, size = 40 }: { name: string; url?: string | null; size?: number }) {
   const [broken, setBroken] = useState(false);
   const parts = (name || "?").trim().split(/\s+/);

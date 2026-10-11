@@ -1,4 +1,6 @@
-from django.contrib.auth import authenticate
+import re
+
+from django.db.models import Q
 from django.utils import timezone
 from rest_framework import permissions, status
 from rest_framework.decorators import api_view, parser_classes, permission_classes, throttle_classes
@@ -11,6 +13,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from core.files import delete_file, store_upload
 from core.models import audit
 
+from .models import Approval, User
 from .serializers import ChangePasswordSerializer, MeSerializer, ProfileUpdateSerializer
 
 
@@ -28,26 +31,48 @@ def tokens_for(user):
     return {"refresh": str(refresh), "access": str(refresh.access_token)}
 
 
+def phone_digits(value):
+    d = re.sub(r"\D", "", value or "")
+    if len(d) == 9:
+        d = "998" + d
+    return d
+
+
+def find_users(identifier):
+    """Login, telefon (istalgan ko'rinishda) yoki email bo'yicha foydalanuvchilarni topadi."""
+    ident = identifier.strip()
+    q = Q(username__iexact=ident)
+    if "@" in ident:
+        q |= Q(email__iexact=ident)
+    d = phone_digits(ident)
+    if len(d) >= 9:
+        q |= Q(username__in=[d, "+" + d]) | Q(phone__in=["+" + d, d])
+    return list(User.objects.filter(q).exclude(role="")[:5])
+
+
 @api_view(["POST"])
 @permission_classes([permissions.AllowAny])
 @throttle_classes([LoginThrottle])
 def login(request):
-    username = (request.data.get("username") or "").strip()
+    identifier = (request.data.get("username") or "").strip()
     password = request.data.get("password") or ""
-    if not username or not password:
+    if not identifier or not password:
         raise ValidationError({"detail": "Login va parolni kiriting"})
-    user = authenticate(request, username=username, password=password)
-    if user is None:
-        # Login ko'pincha telefon raqami: +998 bilan va usiz yozilsa ham ishlasin
-        alt = username.lstrip("+")
-        for cand in (alt, "+" + alt, "+998" + alt if len(alt) == 9 else None):
-            if cand and cand != username:
-                user = authenticate(request, username=cand, password=password)
-                if user:
-                    break
-    if user is None or not user.is_active or not user.role:
-        audit(request, "login_failed", username, actor=None)
+    matched = [u for u in find_users(identifier) if u.check_password(password)]
+    if len(matched) != 1:
+        audit(request, "login_failed", identifier[:60], actor=None)
         return Response({"detail": "Login yoki parol noto'g'ri"}, status=status.HTTP_401_UNAUTHORIZED)
+    user = matched[0]
+    if user.approval == Approval.PENDING:
+        return Response({"detail": "Hisobingiz maktab ma'muriyati tasdig'ini kutmoqda. Tasdiqlangach kira olasiz.", "code": "pending"},
+                        status=status.HTTP_403_FORBIDDEN)
+    if user.approval == Approval.REJECTED:
+        reason = f" Sabab: {user.reject_reason}" if user.reject_reason else ""
+        return Response({"detail": f"Ro'yxatdan o'tish so'rovingiz rad etilgan.{reason}", "code": "rejected"}, status=status.HTTP_403_FORBIDDEN)
+    if not user.is_active:
+        return Response({"detail": "Hisobingiz o'chirilgan. Maktab ma'muriyatiga murojaat qiling."}, status=status.HTTP_403_FORBIDDEN)
+    user.last_login = timezone.now()
+    user.save(update_fields=["last_login"])
     audit(request, "login", user.username, actor=user)
     return Response({**tokens_for(user), "user": MeSerializer(user).data})
 

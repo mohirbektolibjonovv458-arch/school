@@ -10,6 +10,7 @@ import { useToast } from "../../ui/toast";
 
 interface Period { number: number; start: string; end: string }
 interface S {
+  splash_url: string | null; allow_registration: boolean;
   name: string; short_name: string; address: string; phone: string; logo_url: string | null; academic_year: string; work_days: number[];
   work_start: string; work_end: string; late_grace_minutes: number; arrive_before_lesson_minutes: number; use_timetable_for_arrival: boolean;
   absent_alert_after_minutes: number; checkout_min_minutes: number; face_threshold: number; require_liveness: boolean;
@@ -25,6 +26,7 @@ export default function Settings() {
   const [err, setErr] = useState<ApiError | null>(null);
   const [busy, setBusy] = useState(false);
   const logoRef = useRef<HTMLInputElement>(null);
+  const splashRef = useRef<HTMLInputElement>(null);
   useEffect(() => { if (state.data) setD({ ...state.data, work_start: hm(state.data.work_start), work_end: hm(state.data.work_end), daily_report_time: hm(state.data.daily_report_time) }); }, [state.data]);
   const set = <K extends keyof S>(k: K, v: S[K]) => setD((x) => (x ? { ...x, [k]: v } : x));
 
@@ -38,6 +40,12 @@ export default function Settings() {
       toast("Sozlamalar saqlandi");
     } catch (e) { setErr(e as ApiError); window.scrollTo({ top: 0, behavior: "smooth" }); } finally { setBusy(false); }
   };
+  const onSplash = async (f?: File) => {
+    if (!f) return;
+    const fd = new FormData(); fd.append("file", await compressImage(f, 1600));
+    try { await upload("school/splash/", fd); state.reload(true); toast("Kirish ekrani surati yangilandi"); } catch (e) { toast((e as Error).message, "error"); }
+  };
+  const removeSplash = async () => { await api("school/splash/", { method: "DELETE" }); state.reload(true); };
   const onLogo = async (f?: File) => {
     if (!f) return;
     const fd = new FormData(); fd.append("file", await compressImage(f, 600));
@@ -63,6 +71,23 @@ export default function Settings() {
                 <Field label="Manzil"><Input value={d.address} onChange={(e) => set("address", e.target.value)} /></Field>
                 <Field label="Telefon"><Input value={d.phone} onChange={(e) => set("phone", e.target.value)} /></Field>
                 <Field label="O'quv yili"><Input value={d.academic_year} onChange={(e) => set("academic_year", e.target.value)} /></Field>
+              </div>
+            </Card>
+
+            <Card title="Kirish ekrani va ro'yxatdan o'tish">
+              <div className="col gap-16">
+                <div className="row gap-16 wrap">
+                  <button onClick={() => splashRef.current?.click()} style={{ width: 120, height: 160, borderRadius: 18, overflow: "hidden", border: "1px dashed var(--border-strong)", background: "var(--surface-2)", cursor: "pointer", padding: 0, color: "var(--text-3)", display: "grid", placeItems: "center" }}>
+                    {d.splash_url ? <img src={d.splash_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <Camera />}
+                  </button>
+                  <input ref={splashRef} hidden type="file" accept="image/*" onChange={(e) => onSplash(e.target.files?.[0])} />
+                  <div className="grow" style={{ minWidth: 180 }}>
+                    <div className="bold">Maktab binosi surati</div>
+                    <div className="small muted mt-4">Ilova ochilganda va kirish sahifasida ko'rinadi. Yuklanmasa — kechki maktab illyustratsiyasi chiqadi. Tik (vertikal) surat yaxshi ko'rinadi.</div>
+                    {d.splash_url && <Button size="sm" variant="ghost" icon={<Trash2 />} className="mt-8" onClick={removeSplash}>Olib tashlash</Button>}
+                  </div>
+                </div>
+                <label className="row between gap-12"><span><b>Ilovada ro'yxatdan o'tish</b><div className="tiny subtle">O'quvchi va o'qituvchilar o'zi ro'yxatdan o'tadi, siz «So'rovlar» bo'limida tasdiqlaysiz. O'chirilsa — hisoblarni faqat siz ochasiz.</div></span><Switch checked={d.allow_registration} onChange={(v) => set("allow_registration", v)} /></label>
               </div>
             </Card>
 

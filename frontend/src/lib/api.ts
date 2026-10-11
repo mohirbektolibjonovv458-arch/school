@@ -5,10 +5,12 @@ const REFRESH = "sp-refresh";
 export class ApiError extends Error {
   status: number;
   errors?: Record<string, unknown>;
-  constructor(status: number, message: string, errors?: Record<string, unknown>) {
+  code?: string;
+  constructor(status: number, message: string, errors?: Record<string, unknown>, code?: string) {
     super(message);
     this.status = status;
     this.errors = errors;
+    this.code = code;
   }
   field(name: string): string | undefined {
     const v = this.errors?.[name];
@@ -18,9 +20,18 @@ export class ApiError extends Error {
   }
 }
 
+// «Meni eslab qolish»: belgilansa — localStorage (qurilmada qoladi), aks holda sessionStorage (oyna yopilguncha)
+const safe = (fn: () => string | null) => { try { return fn(); } catch { return null; } };
+const remembered = () => safe(() => localStorage.getItem("sp-remember")) !== "0";
 const store = {
-  get(k: string) { try { return localStorage.getItem(k); } catch { return null; } },
-  set(k: string, v: string | null) { try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch { /* */ } },
+  get(k: string) { return safe(() => sessionStorage.getItem(k)) ?? safe(() => localStorage.getItem(k)); },
+  set(k: string, v: string | null) {
+    try {
+      sessionStorage.removeItem(k);
+      localStorage.removeItem(k);
+      if (v !== null) (remembered() ? localStorage : sessionStorage).setItem(k, v);
+    } catch { /* */ }
+  },
 };
 
 export const tokens = {
@@ -30,6 +41,8 @@ export const tokens = {
     store.set(ACCESS, access);
     if (refresh !== undefined) store.set(REFRESH, refresh);
   },
+  remember(on: boolean) { try { localStorage.setItem("sp-remember", on ? "1" : "0"); } catch { /* */ } },
+  get remembered() { return remembered(); },
   clear() { store.set(ACCESS, null); store.set(REFRESH, null); },
 };
 
@@ -58,7 +71,7 @@ async function parseError(res: Response): Promise<ApiError> {
   let data: any = null;
   try { data = await res.json(); } catch { /* */ }
   const msg = data?.detail || (res.status >= 500 ? "Serverda xato yuz berdi. Birozdan keyin urinib ko'ring." : `Xato (${res.status})`);
-  return new ApiError(res.status, msg, data?.errors);
+  return new ApiError(res.status, msg, data?.errors, data?.code);
 }
 
 type Opts = { method?: string; body?: unknown; headers?: Record<string, string>; signal?: AbortSignal; raw?: boolean };

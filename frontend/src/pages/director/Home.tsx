@@ -16,7 +16,7 @@ interface D {
   week: { series: { date: string; present: number; late: number; absent: number; excused: number }[]; totals: { rate: number | null; punctuality: number | null; late_minutes: number } };
   homework: { created_week: number; submissions_week: number; to_review: number; average_score: number | null };
   classes: { id: number; name: string; students: number; homework: number; rate: number | null }[];
-  pending_faces: number; setup: { key: string; label: string; done: boolean; link: string }[]; announcements: Announcement[]; work_start: string;
+  pending_faces: number; pending_registrations: number; setup: { key: string; label: string; done: boolean; link: string }[]; announcements: Announcement[]; work_start: string;
 }
 
 export default function DirectorHome() {
@@ -57,6 +57,7 @@ export default function DirectorHome() {
                   </div>
                 </Card>
               )}
+              {d.pending_registrations > 0 && <Link to="/d/requests"><Alert tone="info" icon={<Users />}><b>{d.pending_registrations} ta ro'yxatdan o'tish so'rovi</b> tasdiq kutmoqda — ko'rib chiqish uchun bosing</Alert></Link>}
               {d.pending_faces > 0 && <Link to="/d/biometrics"><Alert tone="info" icon={<ScanFace />}><b>{d.pending_faces} ta yuz namunasi tasdiq kutmoqda</b> — ko'rib chiqish uchun bosing</Alert></Link>}
 
               <div className="grid-2 grid-4-md">

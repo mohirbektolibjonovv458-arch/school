@@ -61,7 +61,7 @@ function Pair({ onPaired }: { onPaired: (t: string) => void }) {
   return (
     <div className="kiosk" style={{ display: "grid", placeItems: "center", padding: 24 }}>
       <form onSubmit={submit} className="kiosk-card" style={{ maxWidth: 420 }}>
-        <div className="big-icon" style={{ background: "#eef0ff", color: "#4f46e5" }}><ScanFace /></div>
+        <div className="big-icon" style={{ background: "#eaf1ff", color: "#1d5fe0" }}><ScanFace /></div>
         <h1 className="h2" style={{ color: "#0f1222" }}>Kiosk qurilmasini ulash</h1>
         <p style={{ color: "#4a5068", marginTop: 8 }}>Direktor panelida: <b>Kiosk qurilmalar → Qurilma qo'shish</b>. Chiqqan 8 belgili kodni kiriting.</p>
         <input className="input" value={code} onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8))}
@@ -301,7 +301,7 @@ function PinMode({ onDone, onBack, onUnauthorized }: { onDone: (r: Result) => vo
               {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((d) => <button key={d} onClick={() => press(d)}>{d}</button>)}
               <button onClick={() => setPin((p) => p.slice(0, -1))} aria-label="O'chirish"><Delete style={{ margin: "0 auto" }} /></button>
               <button onClick={() => press("0")}>0</button>
-              <button onClick={submit} disabled={pin.length < 4 || busy} style={{ background: pin.length >= 4 ? "#4f46e5" : undefined, fontSize: 18 }}>{busy ? <Loader2 className="spin" style={{ margin: "0 auto" }} /> : "OK"}</button>
+              <button onClick={submit} disabled={pin.length < 4 || busy} style={{ background: pin.length >= 4 ? "#1d5fe0" : undefined, fontSize: 18 }}>{busy ? <Loader2 className="spin" style={{ margin: "0 auto" }} /> : "OK"}</button>
             </div>
           </div>
         )}

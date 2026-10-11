@@ -12,7 +12,7 @@ import { AUDIENCES, ClassPicker } from "./AnnouncementForm";
 
 const MONTHS = ["Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun", "Iyul", "Avgust", "Sentabr", "Oktabr", "Noyabr", "Dekabr"];
 export const EVENT_KIND: Record<string, { label: string; color: string; tone: string }> = {
-  meeting: { label: "Yig'ilish", color: "#4F46E5", tone: "primary" },
+  meeting: { label: "Yig'ilish", color: "#1D5FE0", tone: "primary" },
   exam: { label: "Nazorat", color: "#E11D48", tone: "red" },
   event: { label: "Tadbir", color: "#059669", tone: "green" },
   holiday: { label: "Dam olish", color: "#D97706", tone: "amber" },

@@ -7,7 +7,7 @@ import { Alert, Button, Empty, Field, Input, ListSkeleton, Loader, Sheet, SUBJEC
 import { Page } from "../../ui/Shell";
 import { useToast } from "../../ui/toast";
 
-const COLORS = ["#4F46E5", "#7C3AED", "#DB2777", "#E11D48", "#EA580C", "#D97706", "#16A34A", "#0D9488", "#0891B2", "#2563EB", "#475569"];
+const COLORS = ["#1D5FE0", "#7C3AED", "#DB2777", "#E11D48", "#EA580C", "#D97706", "#16A34A", "#0D9488", "#0891B2", "#2563EB", "#475569"];
 const PRESETS = [
   ["Matematika", "calculator"], ["Algebra", "calculator"], ["Geometriya", "calculator"], ["Ona tili", "pen"], ["Adabiyot", "book"], ["Ingliz tili", "languages"],
   ["Rus tili", "languages"], ["Fizika", "atom"], ["Kimyo", "flask"], ["Biologiya", "leaf"], ["Tarix", "landmark"], ["Geografiya", "globe"],

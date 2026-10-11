@@ -12,6 +12,12 @@ class Role(models.TextChoices):
 MANAGER_ROLES = (Role.DIRECTOR, Role.ADMIN)
 
 
+class Approval(models.TextChoices):
+    PENDING = "pending", "Tasdiq kutilmoqda"
+    APPROVED = "approved", "Tasdiqlangan"
+    REJECTED = "rejected", "Rad etilgan"
+
+
 class User(AbstractUser):
     """Login — `username` (o'qituvchilarda odatda telefon, o'quvchilarda maktab beradigan ID)."""
 
@@ -28,6 +34,10 @@ class User(AbstractUser):
     theme = models.CharField(max_length=8, default="system")
     # Parol o'zgarganda / bloklanganda shu vaqtdan oldingi barcha tokenlar bekor
     tokens_valid_after = models.DateTimeField(null=True, blank=True)
+    # O'zi ro'yxatdan o'tganlar direktor tasdiqlaguncha kira olmaydi
+    approval = models.CharField(max_length=10, choices=Approval.choices, default=Approval.APPROVED, db_index=True)
+    self_registered = models.BooleanField(default=False)
+    reject_reason = models.CharField(max_length=255, blank=True)
 
     objects = UserManager()
 

@@ -190,6 +190,7 @@ def director_dashboard(request):
         },
         "classes": class_rows[:12],
         "pending_faces": FaceEnrollment.objects.filter(status="pending").count(),
+        "pending_registrations": User.objects.filter(self_registered=True, approval="pending").count(),
         "setup": setup,
         "work_start": s.work_start.strftime("%H:%M"),
     }

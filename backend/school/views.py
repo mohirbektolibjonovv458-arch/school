@@ -74,6 +74,26 @@ def school_logo(request):
     return Response(SettingsSerializer(s).data)
 
 
+@api_view(["POST", "DELETE"])
+@permission_classes([IsManager])
+@parser_classes([MultiPartParser])
+def school_splash(request):
+    """Kirish ekranidagi maktab binosi surati."""
+    s = SchoolSettings.get()
+    if request.method == "DELETE":
+        delete_file(s.splash)
+        s.splash = ""
+    else:
+        f = request.FILES.get("file")
+        if not f:
+            raise ValidationError({"detail": "Rasm tanlang"})
+        info = store_upload(f, kind="image", folder="school")
+        delete_file(s.splash)
+        s.splash = info["path"]
+    s.save(update_fields=["splash", "updated_at"])
+    return Response(SettingsSerializer(s).data)
+
+
 @api_view(["PUT"])
 @permission_classes([IsManager])
 @parser_classes([JSONParser])
@@ -132,7 +152,7 @@ class TeacherViewSet(viewsets.ModelViewSet):
     permission_classes = [IsManager]
 
     def get_queryset(self):
-        qs = TeacherProfile.objects.select_related("user", "face_consent").prefetch_related(
+        qs = TeacherProfile.objects.filter(user__approval="approved").select_related("user", "face_consent").prefetch_related(
             "subjects", "face_enrollments", Prefetch("assignments", queryset=TeachingAssignment.objects.select_related("school_class", "subject"))
         )
         p = self.request.query_params
@@ -188,7 +208,7 @@ class StudentViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        qs = StudentProfile.objects.select_related("user", "school_class")
+        qs = StudentProfile.objects.filter(user__approval="approved").select_related("user", "school_class")
         if user.is_teacher:
             qs = qs.filter(school_class_id__in=teacher_class_ids(user), user__is_active=True)
         p = self.request.query_params
@@ -630,6 +650,8 @@ AUDIT_LABELS = {
     "face_enrolled": "Yuz namunasini yubordi", "face_approved": "Yuz namunasini tasdiqladi", "face_rejected": "Yuz namunasini rad etdi",
     "face_deleted": "Yuz namunalarini o'chirdi", "kiosk_created": "Kiosk qo'shdi", "kiosk_paired": "Kiosk juftlandi",
     "kiosk_revoked": "Kioskni o'chirdi", "pin_set": "PIN o'rnatdi", "pin_removed": "PIN olib tashladi", "subject_deleted": "Fanni o'chirdi",
+    "registered": "Ro'yxatdan o'tdi", "registration_approved": "Ro'yxatdan o'tishni tasdiqladi",
+    "registration_rejected": "Ro'yxatdan o'tishni rad etdi", "password_reset_requested": "Parolni tiklashni so'radi",
     "telegram_linked": "Telegram botga ulandi", "telegram_unlinked": "Telegram botdan uzildi", "homework_deleted": "Vazifani o'chirdi",
 }
 

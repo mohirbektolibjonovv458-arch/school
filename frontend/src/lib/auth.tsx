@@ -5,7 +5,7 @@ import type { Me } from "./types";
 interface AuthCtx {
   user: Me | null;
   ready: boolean;
-  login: (username: string, password: string) => Promise<Me>;
+  login: (username: string, password: string, remember?: boolean) => Promise<Me>;
   logout: () => void;
   setSession: (d: { access: string; refresh: string; user: Me }) => void;
   refreshMe: () => Promise<void>;
@@ -47,7 +47,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(d.user);
   }, []);
 
-  const login = useCallback(async (username: string, password: string) => {
+  const login = useCallback(async (username: string, password: string, remember = true) => {
+    tokens.remember(remember);
     const d = await api<{ access: string; refresh: string; user: Me }>("auth/login/", { body: { username, password } });
     setSession(d);
     return d.user;

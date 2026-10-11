@@ -17,6 +17,8 @@ class SchoolSettings(models.Model):
     address = models.CharField(max_length=255, blank=True)
     phone = models.CharField(max_length=30, blank=True)
     logo = models.CharField(max_length=255, blank=True)
+    splash = models.CharField(max_length=255, blank=True)  # maktab binosi surati (kirish ekrani)
+    allow_registration = models.BooleanField(default=True)
     academic_year = models.CharField(max_length=20, default="2026-2027")
     work_days = models.JSONField(default=list)  # [1..6]
     work_start = models.TimeField(default=time(8, 0))

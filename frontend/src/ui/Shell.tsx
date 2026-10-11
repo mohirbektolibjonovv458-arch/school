@@ -2,14 +2,15 @@ import { createContext, ReactNode, useContext, useEffect, useState } from "react
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   Bell, BookOpen, BarChart3, CalendarDays, ClipboardCheck, Cog, FileClock, GraduationCap, Home, LayoutGrid, Megaphone,
-  ScanFace, School, Smartphone, Star, Users, Clock3, Send,
+  ScanFace, School, Smartphone, Star, Users, Clock3, Send, UserPlus,
 } from "lucide-react";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { useInterval } from "../lib/hooks";
 import { Avatar, BackButton, IconButton } from "./index";
+import { LogoMark, Wordmark } from "./brand";
 
-type Item = { to: string; label: string; icon: typeof Home; end?: boolean; badge?: "unread" | "review" | "faces" };
+type Item = { to: string; label: string; icon: typeof Home; end?: boolean; badge?: "unread" | "review" | "faces" | "requests" };
 type Nav = { tabs: Item[]; groups: { title: string; items: Item[] }[] };
 
 const STUDENT: Nav = {
@@ -76,6 +77,7 @@ const DIRECTOR: Nav = {
       { to: "/d", label: "Boshqaruv paneli", icon: Home, end: true },
       { to: "/d/attendance", label: "Davomat", icon: Clock3 },
       { to: "/d/reports", label: "Hisobotlar", icon: BarChart3 },
+      { to: "/d/requests", label: "Ro'yxatdan o'tish so'rovlari", icon: UserPlus, badge: "requests" },
     ] },
     { title: "Maktab", items: [
       { to: "/d/classes", label: "Sinflar", icon: School },
@@ -105,21 +107,24 @@ export function navFor(role?: string): Nav {
   return DIRECTOR;
 }
 
-interface Counts { unread: number; review: number; faces: number }
-const CountsCtx = createContext<{ counts: Counts; refresh: () => void }>({ counts: { unread: 0, review: 0, faces: 0 }, refresh: () => {} });
+interface Counts { unread: number; review: number; faces: number; requests: number }
+const CountsCtx = createContext<{ counts: Counts; refresh: () => void }>({ counts: { unread: 0, review: 0, faces: 0, requests: 0 }, refresh: () => {} });
 export const useCounts = () => useContext(CountsCtx);
 
 export function Shell() {
   const { user } = useAuth();
   const nav = navFor(user?.role);
-  const [counts, setCounts] = useState<Counts>({ unread: 0, review: 0, faces: 0 });
+  const [counts, setCounts] = useState<Counts>({ unread: 0, review: 0, faces: 0, requests: 0 });
   const loc = useLocation();
 
   const refresh = () => {
     if (document.visibilityState === "hidden") return;
     api<{ count: number }>("notifications/unread-count/").then((r) => setCounts((c) => ({ ...c, unread: r.count }))).catch(() => {});
     if (user?.role === "teacher") api<any>("submissions/?status=submitted&page_size=1").then((r) => setCounts((c) => ({ ...c, review: r.count }))).catch(() => {});
-    if (user?.role === "director" || user?.role === "admin") api<any>("attendance/enrollments/?status=pending").then((r) => setCounts((c) => ({ ...c, faces: r.items.length }))).catch(() => {});
+    if (user?.role === "director" || user?.role === "admin") {
+      api<any>("attendance/enrollments/?status=pending").then((r) => setCounts((c) => ({ ...c, faces: r.items.length }))).catch(() => {});
+      api<any[]>("registrations/?status=pending").then((r) => setCounts((c) => ({ ...c, requests: r.length }))).catch(() => {});
+    }
   };
   useEffect(() => {
     refresh();
@@ -135,7 +140,7 @@ export function Shell() {
     <CountsCtx.Provider value={{ counts, refresh }}>
       <div className="app with-sidebar">
         <aside className="sidebar">
-          <div className="brand"><div className="brand-mark"><GraduationCap size={20} /></div>SchoolPro</div>
+          <div className="brand"><LogoMark size={36} /><Wordmark size={21} /></div>
           {nav.groups.map((g) => (
             <div key={g.title}>
               <div className="nav-group">{g.title}</div>
@@ -151,7 +156,7 @@ export function Shell() {
         <Outlet />
         <nav className="tabbar" aria-label="Asosiy menyu">
           {nav.tabs.map((i) => {
-            const n = i.badge ? counts[i.badge] : i.to === "/menu" ? counts.unread + counts.faces : 0;
+            const n = i.badge ? counts[i.badge] : i.to === "/menu" ? counts.unread + counts.faces + counts.requests : 0;
             return (
               <NavLink key={i.to} to={i.to} end={i.end} className={({ isActive }) => `tab ${isActive ? "active" : ""}`}>
                 <i.icon />

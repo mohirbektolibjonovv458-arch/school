@@ -45,14 +45,18 @@ class PeriodSerializer(serializers.ModelSerializer):
 
 class SettingsSerializer(serializers.ModelSerializer):
     logo_url = serializers.SerializerMethodField()
+    splash_url = serializers.SerializerMethodField()
 
     class Meta:
         model = SchoolSettings
-        exclude = ["logo"]
+        exclude = ["logo", "splash"]
         read_only_fields = ["updated_at"]
 
     def get_logo_url(self, obj):
         return signed_url(obj.logo) if obj.logo else None
+
+    def get_splash_url(self, obj):
+        return signed_url(obj.splash) if obj.splash else None
 
     def validate_work_days(self, v):
         if not isinstance(v, list) or not v or any(d not in range(1, 8) for d in v):

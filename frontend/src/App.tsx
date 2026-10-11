@@ -1,9 +1,12 @@
-import { lazy, ReactNode, Suspense } from "react";
+import { lazy, ReactNode, Suspense, useEffect, useState } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { homeFor, useAuth } from "./lib/auth";
 import { Shell } from "./ui/Shell";
 import { PageSkeleton } from "./ui";
-import Login from "./pages/Login";
+import Login from "./pages/auth/Login";
+import { Splash as SplashScreen } from "./pages/auth/shared";
+
+const Register = lazy(() => import("./pages/auth/Register"));
 import ChangePassword from "./pages/ChangePassword";
 
 const Common = {
@@ -50,6 +53,7 @@ const D = {
   Telegram: lazy(() => import("./pages/director/Telegram")),
   Settings: lazy(() => import("./pages/director/Settings")),
   Audit: lazy(() => import("./pages/director/Audit")),
+  Requests: lazy(() => import("./pages/director/Requests")),
 };
 const Kiosk = lazy(() => import("./pages/kiosk/Kiosk"));
 
@@ -74,11 +78,33 @@ function Splash() {
 const Lazy = ({ children }: { children: ReactNode }) => <Suspense fallback={<main className="main"><PageSkeleton /></main>}>{children}</Suspense>;
 const MGR = ["director", "admin"];
 
+/** Ochilish ekrani: sessiyada bir marta, kamida ~1.4 soniya va hisob tekshirilguncha */
+function useSplash(ready: boolean) {
+  const [show, setShow] = useState(() => {
+    try { return !sessionStorage.getItem("sp-splash") && !location.pathname.startsWith("/kiosk"); } catch { return false; }
+  });
+  const [leaving, setLeaving] = useState(false);
+  const [minDone, setMinDone] = useState(false);
+  useEffect(() => { if (!show) return; const t = setTimeout(() => setMinDone(true), 1400); return () => clearTimeout(t); }, [show]);
+  useEffect(() => {
+    if (!show || !ready || !minDone) return;
+    setLeaving(true);
+    try { sessionStorage.setItem("sp-splash", "1"); } catch { /* */ }
+    const t = setTimeout(() => setShow(false), 430);
+    return () => clearTimeout(t);
+  }, [show, ready, minDone]);
+  return { show, leaving };
+}
+
 export default function App() {
   const { user, ready } = useAuth();
+  const splash = useSplash(ready);
   return (
+    <>
+    {splash.show && <SplashScreen leaving={splash.leaving} />}
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Suspense fallback={<Splash />}><Register /></Suspense>} />
       <Route path="/kiosk" element={<Suspense fallback={<Splash />}><Kiosk /></Suspense>} />
       <Route path="/" element={ready ? <Navigate to={user ? homeFor(user.role) : "/login"} replace /> : <Splash />} />
       <Route element={<Guard><Shell /></Guard>}>
@@ -125,8 +151,10 @@ export default function App() {
         <Route path="/d/telegram" element={<Guard roles={MGR}><Lazy><D.Telegram /></Lazy></Guard>} />
         <Route path="/d/settings" element={<Guard roles={MGR}><Lazy><D.Settings /></Lazy></Guard>} />
         <Route path="/d/audit" element={<Guard roles={MGR}><Lazy><D.Audit /></Lazy></Guard>} />
+        <Route path="/d/requests" element={<Guard roles={MGR}><Lazy><D.Requests /></Lazy></Guard>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </>
   );
 }

@@ -4,7 +4,7 @@ from django.urls import include, path, re_path
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 
-from accounts import views as acc
+from accounts import signup, views as acc
 from accounts.authentication import RefreshSerializer
 from attendance import views as att
 from bot import views as botv
@@ -35,6 +35,13 @@ class Refresh(TokenRefreshView):
 api = [
     path("health/", core.health),
     path("auth/login/", acc.login),
+    path("auth/register/", signup.register),
+    path("auth/forgot/", signup.forgot_password),
+    path("auth/google/", signup.google_login),
+    path("public/", signup.public_info),
+    path("registrations/", signup.registrations),
+    path("registrations/<int:pk>/review/", signup.registration_review),
+    path("school/splash/", sch.school_splash),
     path("auth/refresh/", Refresh.as_view()),
     path("auth/me/", acc.me),
     path("auth/avatar/", acc.avatar),
